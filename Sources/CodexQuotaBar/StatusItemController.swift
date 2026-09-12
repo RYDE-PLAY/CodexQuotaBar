@@ -10,6 +10,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let weeklyItem = NSMenuItem(title: "周额度：读取中…", action: nil, keyEquivalent: "")
     private let fiveHourRow = QuotaMenuRowView(label: "5h额度：")
     private let weeklyRow = QuotaMenuRowView(label: "周额度：")
+    private let devSpaceController = DevSpaceController()
+    private let devSpaceItem = NSMenuItem(
+        title: "DevSpace",
+        action: nil,
+        keyEquivalent: ""
+    )
+    private let devSpaceRow = DevSpaceMenuRowView()
     private var refreshLoop: Task<Void, Never>?
 
     override init() {
@@ -18,6 +25,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         store.onChange = { [weak self] in
             self?.render()
         }
+        devSpaceController.onChange = { [weak self] in
+            self?.renderDevSpace()
+        }
+        devSpaceRow.onToggle = { [weak self] in
+            self?.devSpaceController.toggle()
+        }
 
         configureMenu()
         configureStatusItem()
@@ -25,7 +38,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     func start() {
         render()
+        renderDevSpace()
         store.refresh()
+        devSpaceController.start()
 
         refreshLoop = Task { [weak self] in
             while !Task.isCancelled {
@@ -42,6 +57,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     func menuWillOpen(_ menu: NSMenu) {
         store.refreshIfNeeded()
+        devSpaceController.refresh()
     }
 
     private func configureStatusItem() {
@@ -66,6 +82,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(weeklyItem)
         menu.addItem(.separator())
 
+        devSpaceItem.isEnabled = true
+        devSpaceItem.image = nil
+        devSpaceItem.view = devSpaceRow
+        menu.addItem(devSpaceItem)
+
+        menu.addItem(.separator())
+
         let quitItem = NSMenuItem(
             title: "退出",
             action: #selector(terminateApplication(_:)),
@@ -83,6 +106,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         NSApplication.shared.terminate(sender)
     }
 
+    private func renderDevSpace() {
+        devSpaceRow.isOn = devSpaceController.isEnabled
+        devSpaceRow.isToggleEnabled = !devSpaceController.isBusy
+        devSpaceRow.statusText = devSpaceController.statusText
+        devSpaceRow.toolTip = devSpaceController.runtimeDescription
+    }
+
     private func render() {
         let fiveHourProgress = store.snapshot?.fiveHour?.progress
         statusItem.button?.image = StatusIconRenderer.image(
@@ -96,10 +126,20 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         weeklyItem.title = "周额度：\(weeklyValue)"
         fiveHourRow.value = fiveHourValue
         weeklyRow.value = weeklyValue
-        let rowWidth = max(fiveHourRow.preferredWidth, weeklyRow.preferredWidth)
+
+        let rowWidth = max(
+            fiveHourRow.preferredWidth,
+            weeklyRow.preferredWidth,
+            devSpaceRow.preferredWidth
+        )
         for row in [fiveHourRow, weeklyRow] {
-            row.setFrameSize(NSSize(width: rowWidth, height: row.intrinsicContentSize.height))
+            row.setFrameSize(
+                NSSize(width: rowWidth, height: row.intrinsicContentSize.height)
+            )
         }
+        devSpaceRow.setFrameSize(
+            NSSize(width: rowWidth, height: devSpaceRow.intrinsicContentSize.height)
+        )
 
         let accessibilityText = accessibilityDescription()
         statusItem.button?.setAccessibilityValue(accessibilityText)
