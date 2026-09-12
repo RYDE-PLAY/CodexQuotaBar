@@ -6,8 +6,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let store = QuotaStore()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let menu = NSMenu()
-    private let fiveHourItem = NSMenuItem(title: "5h额度：读取中…", action: nil, keyEquivalent: "")
-    private let weeklyItem = NSMenuItem(title: "周额度：读取中…", action: nil, keyEquivalent: "")
+    // AppKit measures titles even for custom views; full text belongs in the rows.
+    private let fiveHourItem = NSMenuItem(title: "5h额度", action: nil, keyEquivalent: "")
+    private let weeklyItem = NSMenuItem(title: "周额度", action: nil, keyEquivalent: "")
     private let fiveHourRow = QuotaMenuRowView(label: "5h额度：")
     private let weeklyRow = QuotaMenuRowView(label: "周额度：")
     private let devSpaceController = DevSpaceController()
@@ -17,6 +18,28 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         keyEquivalent: ""
     )
     private let devSpaceRow = DevSpaceMenuRowView()
+    private lazy var quotaWarningIcon: NSImage? = {
+        let image = NSImage(
+            systemSymbolName: "exclamationmark.circle",
+            accessibilityDescription: "额度数据提示"
+        )
+        image?.isTemplate = true
+        return image
+    }()
+    private lazy var resetTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.timeZone = .current
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+    private lazy var resetDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.timeZone = .current
+        formatter.dateFormat = "MM/dd"
+        return formatter
+    }()
     private var refreshLoop: Task<Void, Never>?
 
     override init() {
@@ -120,12 +143,37 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             isStale: store.isStale
         )
 
-        let fiveHourValue = menuValue(window: store.snapshot?.fiveHour)
-        let weeklyValue = menuValue(window: store.snapshot?.weekly)
-        fiveHourItem.title = "5h额度：\(fiveHourValue)"
-        weeklyItem.title = "周额度：\(weeklyValue)"
+        let fiveHourWindow = store.snapshot?.fiveHour
+        let weeklyWindow = store.snapshot?.weekly
+        let fiveHourLabel = quotaLabel(
+            "5h额度",
+            resetAt: fiveHourWindow?.resetsAt,
+            formatter: resetTimeFormatter
+        )
+        let weeklyLabel = quotaLabel(
+            "周额度",
+            resetAt: weeklyWindow?.resetsAt,
+            formatter: resetDateFormatter
+        )
+        let fiveHourValue = menuValue(window: fiveHourWindow)
+        let weeklyValue = menuValue(window: weeklyWindow)
+        fiveHourItem.setAccessibilityLabel("\(fiveHourLabel)\(fiveHourValue)")
+        weeklyItem.setAccessibilityLabel("\(weeklyLabel)\(weeklyValue)")
+        fiveHourRow.label = fiveHourLabel
+        weeklyRow.label = weeklyLabel
         fiveHourRow.value = fiveHourValue
         weeklyRow.value = weeklyValue
+        let labelWidth = max(
+            58,
+            fiveHourRow.preferredLabelWidth,
+            weeklyRow.preferredLabelWidth
+        )
+        fiveHourRow.labelWidth = labelWidth
+        weeklyRow.labelWidth = labelWidth
+        fiveHourRow.statusToolTip = menuStatus(window: fiveHourWindow)
+        weeklyRow.statusToolTip = menuStatus(window: weeklyWindow)
+        fiveHourRow.statusIcon = fiveHourRow.statusToolTip == nil ? nil : quotaWarningIcon
+        weeklyRow.statusIcon = weeklyRow.statusToolTip == nil ? nil : quotaWarningIcon
 
         let rowWidth = max(
             fiveHourRow.preferredWidth,
@@ -151,11 +199,28 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             if store.isLoading {
                 return "读取中…"
             }
-            return "—（无法读取）"
+            return "—"
         }
 
-        let suffix = store.isStale ? "（数据已过期）" : ""
-        return "\(window.remainingPercent)% 剩余\(suffix)"
+        return "\(window.remainingPercent)% 剩余"
+    }
+
+    private func quotaLabel(
+        _ title: String,
+        resetAt: Date?,
+        formatter: DateFormatter
+    ) -> String {
+        guard let resetAt else { return "\(title)：" }
+        return "\(title)（~\(formatter.string(from: resetAt))）："
+    }
+
+    private func menuStatus(window: QuotaWindow?) -> String? {
+        if window != nil {
+            return store.staleDescription
+        }
+
+        guard !store.isLoading else { return nil }
+        return store.errorMessage ?? "没有读取到这项额度"
     }
 
     private func accessibilityDescription() -> String {

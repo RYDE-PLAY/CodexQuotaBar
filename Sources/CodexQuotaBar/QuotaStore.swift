@@ -25,6 +25,19 @@ final class QuotaStore {
         return errorMessage != nil || Date().timeIntervalSince(snapshot.updatedAt) > staleAfter
     }
 
+    var staleDescription: String? {
+        guard isStale else { return nil }
+
+        guard snapshot != nil else {
+            return errorMessage ?? (isLoading ? "正在读取 Codex 额度" : "无法读取 Codex 额度")
+        }
+
+        if let errorMessage {
+            return "最近一次刷新失败：\(errorMessage)，当前显示上次成功读取的数据"
+        }
+        return "超过 10 分钟未成功刷新，当前显示上次成功读取的数据"
+    }
+
     func refreshIfNeeded() {
         guard refreshTask == nil else { return }
         if let snapshot, Date().timeIntervalSince(snapshot.updatedAt) < 60, errorMessage == nil {
@@ -56,12 +69,8 @@ final class QuotaStore {
                 self?.errorMessage = nil
             } catch {
                 guard !Task.isCancelled else { return }
-                if self?.snapshot == nil {
-                    self?.errorMessage = (error as? LocalizedError)?.errorDescription
-                        ?? "无法读取 Codex 额度"
-                } else {
-                    self?.errorMessage = "数据已过期"
-                }
+                self?.errorMessage = (error as? LocalizedError)?.errorDescription
+                    ?? "无法读取 Codex 额度"
             }
 
             guard !Task.isCancelled else { return }
