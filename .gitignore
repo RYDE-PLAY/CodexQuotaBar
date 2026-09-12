@@ -8,3 +8,7 @@ xcuserdata/
 .env
 .env.*
 !.env.example
+
+# Keep design sources local; the packaged app only needs the generated ICNS.
+Resources/CodexQuotaBarIcon.svg
+Resources/CodexQuotaBarIcon.png

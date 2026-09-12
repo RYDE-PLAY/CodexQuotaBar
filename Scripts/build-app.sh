@@ -25,6 +25,7 @@ mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
 cp "$binary_path" "$app_dir/Contents/MacOS/CodexQuotaBar"
 cp "$project_dir/Resources/Info.plist" "$app_dir/Contents/Info.plist"
 cp "$project_dir/Resources/chatgptTemplate@2x.png" "$app_dir/Contents/Resources/"
+cp "$project_dir/Resources/CodexQuotaBarIcon.icns" "$app_dir/Contents/Resources/"
 
 codesign --force --deep --sign - "$app_dir" >/dev/null
 print "已生成：$app_dir"
