@@ -1,5 +1,6 @@
 import AppKit
 
+@MainActor
 enum StatusIconRenderer {
     private static let imageSize = NSSize(width: 18, height: 18)
     private static let logoRect = CGRect(x: 0, y: 0, width: 18, height: 18)
