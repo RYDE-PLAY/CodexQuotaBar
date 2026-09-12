@@ -9,16 +9,16 @@
 
 1. 直接下载：
 
-从 [Releases](https://github.com/RYDE-PLAY/CodexQuotaBar/releases/latest) 下载 ZIP，解压后将应用拖入「应用程序」。支持 Apple Silicon 和 Intel；需要 macOS 14+ 和已登录的 Codex CLI。安装包尚未公证，若首次打开被拦截，在「系统设置 → 隐私与安全性」中选择「仍要打开」。
+    从 [Releases](https://github.com/RYDE-PLAY/CodexQuotaBar/releases/latest) 下载 ZIP，解压后将应用拖入「应用程序」。支持 Apple Silicon 和 Intel；需要 macOS 14+ 和已登录的 Codex CLI。安装包尚未公证，若首次打开被拦截，在「系统设置 → 隐私与安全性」中选择「仍要打开」。
 
 2. 从源码构建：
 
-需要 macOS 14+、Xcode Command Line Tools，以及已登录的 Codex CLI（也可使用 ChatGPT.app 内置的 Codex）。
-
-```sh
-git clone https://github.com/RYDE-PLAY/CodexQuotaBar.git
-cd CodexQuotaBar
-./Scripts/build-app.sh
-cp -R Build/CodexQuotaBar.app /Applications/
-open /Applications/CodexQuotaBar.app
-```
+    需要 macOS 14+、Xcode Command Line Tools，以及已登录的 Codex CLI（也可使用 ChatGPT.app 内置的 Codex）。
+  
+    ```sh
+    git clone https://github.com/RYDE-PLAY/CodexQuotaBar.git
+    cd CodexQuotaBar
+    ./Scripts/build-app.sh
+    cp -R Build/CodexQuotaBar.app /Applications/
+    open /Applications/CodexQuotaBar.app
+    ```
