@@ -6,6 +6,10 @@
 
 已安装 DevSpace 的用户还可通过菜单开关控制服务；开启后会在后台持续运行并随登录启动，卸载本工具前请先关闭该开关。
 
+## 菜单预览
+
+![DevSpace 菜单（浅色与深色模式）](docs/devspace-menu-light-dark-vertical.png)
+
 ## 安装
 
 可以使用以下任一方式安装。
